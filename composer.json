@@ -1,0 +1,22 @@
+{
+  "name": "colorium/orm",
+  "type": "library",
+  "description": "Simple ORM Library",
+  "homepage": "https://github.com/colorium/orm",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Aymeric Assier",
+      "email": "aymeric.assier@gmail.com",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=5.6"
+  },
+  "autoload": {
+    "psr-4": {
+      "Colorium\\Orm": "/src/Colorium/Orm/"
+    }
+  }
+}
