@@ -1,10 +1,8 @@
 <?php
 
-namespace Colorium\Orm\Native;
+namespace Colorium\Orm\Mapper;
 
-use Colorium\Orm\Mapper;
-
-class Connector implements Mapper\Connector
+class Native implements Source
 {
 
     /** @var \PDO */
@@ -41,23 +39,34 @@ class Connector implements Mapper\Connector
 
 
     /**
-     * Generate query builder
+     * Generate builder
      *
      * @param string $name
-     * @param string $class
-     * @return Query
+     * @return bool
      */
-    public function query($name, $class = null)
+    public function builder($name)
     {
-        if($key = array_search($name, $this->mapping)) {
-            $class = $name;
-            $name = $key;
-        }
-        elseif(!$class and isset($this->mapping[$name])) {
-            $class = $this->mapping[$name];
-        }
+        $class = isset($this->mapping[$name])
+            ? $this->mapping[$name]
+            : null;
 
-        return new Query($name, $this->pdo, $class);
+        return new Native\Builder($name, $this->pdo, $class);
+    }
+
+
+    /**
+     * Generate query
+     *
+     * @param string $name
+     * @return Native\Query
+     */
+    public function query($name)
+    {
+        $class = isset($this->mapping[$name])
+            ? $this->mapping[$name]
+            : null;
+
+        return new Native\Query($name, $this->pdo, $class);
     }
 
 
@@ -66,7 +75,7 @@ class Connector implements Mapper\Connector
      *
      * @param $name
      * @param array $args
-     * @return Query
+     * @return Native\Query
      */
     public function __call($name, array $args)
     {
@@ -78,7 +87,7 @@ class Connector implements Mapper\Connector
      * Alias of query(name)
      *
      * @param $name
-     * @return Query
+     * @return Native\Query
      */
     public function __get($name)
     {
@@ -89,15 +98,15 @@ class Connector implements Mapper\Connector
     /**
      * Execute raw query
      *
-     * @param string $sql
+     * @param string $query
      * @param array $params
      * @param string $class
      * @return mixed
      */
-    public function raw($sql, array $params = [], $class = null)
+    public function raw($query, array $params = [], $class = null)
     {
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($params)) {
+        if($statement = $this->pdo->prepare($query) and $result = $statement->execute($params)) {
 
             // collection
             if($statement->columnCount() > 0) {

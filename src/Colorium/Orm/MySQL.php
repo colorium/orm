@@ -2,7 +2,7 @@
 
 namespace Colorium\Orm;
 
-class MySQL extends Native\Connector
+class MySQL extends Mapper\Native
 {
 
     /**

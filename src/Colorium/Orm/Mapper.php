@@ -5,31 +5,31 @@ namespace Colorium\Orm;
 abstract class Mapper
 {
 
-    /** @var Mapper\Connector */
-    protected static $connector;
+    /** @var Mapper\Source */
+    protected static $source;
 
 
     /**
-     * Connector accessor
+     * Source accessor
      *
-     * @param Mapper\Connector $connector
-     * @return Mapper\Connector
+     * @param Mapper\Source $source
+     * @return Mapper\Source
      */
-    public static function instance(Mapper\Connector $connector = null)
+    public static function source(Mapper\Source $source = null)
     {
-        if($connector) {
-            static::$connector = $connector;
+        if($source) {
+            static::$source = $source;
         }
-        elseif(!isset(static::$connector)) {
-            throw new \LogicException('No connector instance stored');
+        elseif(!isset(static::$source)) {
+            throw new \LogicException('No source instance stored');
         }
 
-        return static::$connector;
+        return static::$source;
     }
 
 
     /**
-     * MySQL driver constructor
+     * MySQL source
      *
      * @param string $dbname
      * @param array $settings
@@ -38,12 +38,12 @@ abstract class Mapper
     public static function MySQL($dbname, array $settings = [])
     {
         $mysql = new MySQL($dbname, $settings);
-        return static::instance($mysql);
+        return static::source($mysql);
     }
 
 
     /**
-     * SQLite driver connector
+     * SQLite source
      *
      * @param string $filename
      * @return MySQL
@@ -51,47 +51,45 @@ abstract class Mapper
     public static function SQLite($filename)
     {
         $sqlite = new SQLite($filename);
-        return static::instance($sqlite);
+        return static::source($sqlite);
     }
 
 
     /**
-     * Generate query builder
+     * Generate query
      *
      * @param string $name
-     * @param string $class
-     * @return Mapper\Query
+     * @return Mapper\Source\Query
      */
-    public static function query($name, $class = null)
+    public static function query($name)
     {
-        return static::instance()->query($name, $class);
+        return static::source()->query($name);
     }
 
 
     /**
-     * Alias of query(name, class)
+     * Alias of query(name)
      *
      * @param string $name
-     * @param array $args
-     * @return Mapper\Query
+     * @return Mapper\Source\Query
      */
-    public static function __callStatic($name, array $args)
+    public static function __callStatic($name)
     {
-        return static::query($name, ...$args);
+        return static::query($name);
     }
 
 
     /**
      * Execute raw query
      *
-     * @param string $sql
+     * @param string $query
      * @param array $params
      * @param string $class
      * @return mixed
      */
-    public static function raw($sql, array $params = [], $class = null)
+    public static function raw($query, array $params = [], $class = null)
     {
-        return static::instance()->raw($sql, $params, $class);
+        return static::source()->raw($query, $params, $class);
     }
 
 

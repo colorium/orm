@@ -2,7 +2,7 @@
 
 namespace Colorium\Orm;
 
-class SQLite extends Native\Connector
+class SQLite extends Mapper\Native
 {
 
     /**

@@ -70,7 +70,7 @@ trait Model
     /**
      * Generate query builder
      *
-     * @return Mapper\Query
+     * @return Mapper\Source\Query
      */
     public static function query()
     {

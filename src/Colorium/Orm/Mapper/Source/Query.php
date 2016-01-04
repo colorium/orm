@@ -1,6 +1,6 @@
 <?php
 
-namespace Colorium\Orm\Mapper;
+namespace Colorium\Orm\Mapper\Source;
 
 interface Query
 {

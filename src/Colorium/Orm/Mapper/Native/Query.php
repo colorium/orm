@@ -1,10 +1,10 @@
 <?php
 
-namespace Colorium\Orm\Native;
+namespace Colorium\Orm\Mapper\Native;
 
-use Colorium\Orm\Mapper;
+use Colorium\Orm\Mapper\Source;
 
-class Query implements Mapper\Query
+class Query implements Source\Query
 {
 
     /** @var string */

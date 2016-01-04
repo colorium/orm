@@ -1,7 +1,6 @@
 <?php
 
-namespace Colorium\Orm\Native;
-
+namespace Colorium\Orm\Mapper\Native;
 
 class Compiler
 {
@@ -55,14 +54,14 @@ class Compiler
     /**
      * Compile INSERT INTO
      *
-     * @param string $name
+     * @param string $table
      * @param array $set
      * @return array
      */
-    public function insert($name, array $set)
+    public function insert($table, array $set)
     {
         $sql = $values = $fields = $holders = [];
-        $sql[] = 'INSERT INTO `' . $name . '`';
+        $sql[] = 'INSERT INTO `' . $table . '`';
 
         foreach($set as $field => $value) {
             $fields[] = '`' . $field . '`';
@@ -81,15 +80,15 @@ class Compiler
     /**
      * Compile UPDATE
      *
-     * @param string $name
+     * @param string $table
      * @param array $set
      * @param array $where
      * @return array
      */
-    public function update($name, array $set, array $where = [])
+    public function update($table, array $set, array $where = [])
     {
         $sql = $values = $fields = [];
-        $sql[] = 'UPDATE `' . $name . '`';
+        $sql[] = 'UPDATE `' . $table . '`';
 
         foreach($set as $field => $value) {
             $fields[] = '`' . $field . '` = ?';
@@ -119,14 +118,14 @@ class Compiler
     /**
      * Compile DELETE
      *
-     * @param string $name
+     * @param string $table
      * @param array $where
      * @return array
      */
-    public function delete($name, array $where = [])
+    public function delete($table, array $where = [])
     {
         $sql = $values = [];
-        $sql[] = 'DELETE FROM `' . $name . '`';
+        $sql[] = 'DELETE FROM `' . $table . '`';
 
         if($where) {
             $where = [];
@@ -143,6 +142,73 @@ class Compiler
 
         $sql = implode("\n", $sql);
         return [$sql, $values];
+    }
+
+
+    /**
+     * Compile TABLE EXISTS
+     *
+     * @param string $table
+     * @return bool
+     */
+    public function tableExists($table)
+    {
+        return 'SELECT 1 FROM `' . $table . '`';
+    }
+
+
+    /**
+     * Compile CREATE TABLE
+     *
+     * @param string $table
+     * @param array $specs
+     * @return bool
+     */
+    public function createTable($table, array $specs)
+    {
+        $sql = 'CREATE TABLE IF NOT EXISTS `' . $table . '` (';
+        foreach($specs as $field => $opts) {
+            $sql .= "\n" .  '`' . $field . '` ' . $opts['type'];
+            if($opts['primary'] == true) {
+                $opts['nullable'] = false;
+                $opts['default'] = null;
+                $sql .= ' PRIMARY KEY AUTO_INCREMENT';
+            }
+            if(!$opts['nullable']) {
+                $sql .= ' NOT NULL';
+            }
+            if($opts['default']) {
+                $sql .= ' DEFAULT ' . $opts['default'];
+            }
+            $sql .= ',';
+        }
+
+        $sql = trim($sql, ',') . "\n" . ');';
+        return [$sql, []];
+    }
+
+
+    /**
+     * Compile DROP TABLE
+     *
+     * @param string $table
+     * @return bool
+     */
+    public function dropTable($table)
+    {
+        return 'DROP TABLE IF EXISTS `' . $table . '`';
+    }
+
+
+    /**
+     * Compile TRUNCATE TABLE
+     *
+     * @param string $table
+     * @return bool
+     */
+    public function truncateTable($table)
+    {
+        return 'TRUNCATE TABLE `' . $table . '`';
     }
 
 }
