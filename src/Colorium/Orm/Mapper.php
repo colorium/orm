@@ -71,9 +71,10 @@ abstract class Mapper
      * Alias of query(name)
      *
      * @param string $name
+     * @param array $args
      * @return Mapper\Source\Query
      */
-    public static function __callStatic($name)
+    public static function __callStatic($name, array $args)
     {
         return static::query($name);
     }
