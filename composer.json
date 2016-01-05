@@ -13,7 +13,7 @@
   ],
   "require": {
     "php": ">=5.6",
-    "colorium/runtime": ">=0.1"
+    "colorium/runtime": "dev-master"
   },
   "autoload": {
     "psr-4": {
