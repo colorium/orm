@@ -42,7 +42,7 @@ class Native implements Source
      * Generate builder
      *
      * @param string $name
-     * @return bool
+     * @return Native\Builder
      */
     public function builder($name)
     {
