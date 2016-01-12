@@ -184,7 +184,7 @@ class Compiler
         }
 
         $sql = trim($sql, ',') . "\n" . ');';
-        return [$sql, []];
+        return $sql;
     }
 
 
