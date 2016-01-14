@@ -1,1 +1,5 @@
-# Colorium ORM Component
+# Pragmatic ORM
+
+## Install
+
+`composer require colorium/orm`
