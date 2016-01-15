@@ -18,7 +18,7 @@ interface Builder
      * @param array $specs
      * @return bool
      */
-    public function create(array $specs);
+    public function create(array $specs = []);
 
     /**
      * Wipe entity

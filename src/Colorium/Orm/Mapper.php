@@ -68,6 +68,18 @@ abstract class Mapper
 
 
     /**
+     * Generate builder
+     *
+     * @param string $name
+     * @return Mapper\Source\Builder
+     */
+    public static function builder($name)
+    {
+        return static::source()->builder($name);
+    }
+
+
+    /**
      * Alias of query(name)
      *
      * @param string $name

@@ -6,6 +6,69 @@ trait Model
 {
 
     /**
+     * @id
+     * @var int
+     */
+    public $id;
+
+
+    /**
+     * Add record
+     *
+     * @return int
+     */
+    public function add()
+    {
+        $values = get_object_vars($this);
+        return Mapper::add(get_called_class(), $values);
+    }
+
+
+    /**
+     * Edit record
+     *
+     * @return int
+     */
+    public function edit()
+    {
+        if(!$this->id) {
+            return false;
+        }
+
+        $where = ['id' => $this->id];
+        $values = get_object_vars($this);
+        return Mapper::edit(get_called_class(), $values, $where);
+    }
+
+
+    /**
+     * Save record
+     *
+     * @return int
+     */
+    public function save()
+    {
+        return $this->id ? $this->edit() : $this->add();
+    }
+
+
+    /**
+     * Delete record
+     *
+     * @return int
+     */
+    public function drop()
+    {
+        if(!$this->id) {
+            return false;
+        }
+
+        $where['id'] = $this->id;
+        return Mapper::drop(get_called_class(), $where);
+    }
+
+
+    /**
      * Fetch many result
      *
      * @param array $where
@@ -31,50 +94,24 @@ trait Model
 
 
     /**
-     * Add record
-     *
-     * @param array $values
-     * @return int
-     */
-    public static function add(array $values)
-    {
-        return Mapper::add(get_called_class(), $values);
-    }
-
-
-    /**
-     * Edit record
-     *
-     * @param array $values
-     * @param array $where
-     * @return int
-     */
-    public static function edit(array $values, array $where = [])
-    {
-        return Mapper::edit(get_called_class(), $values, $where);
-    }
-
-
-    /**
-     * Delete record
-     *
-     * @param array $where
-     * @return int
-     */
-    public static function drop(array $where = [])
-    {
-        return Mapper::drop(get_called_class(), $where);
-    }
-
-
-    /**
-     * Generate query builder
+     * Generate query
      *
      * @return Mapper\Source\Query
      */
     public static function query()
     {
         return Mapper::query(get_called_class());
+    }
+
+
+    /**
+     * Generate builder
+     *
+     * @return Mapper\Source\Builder
+     */
+    public static function builder()
+    {
+        return Mapper::builder(get_called_class());
     }
 
 }
