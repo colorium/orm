@@ -41,6 +41,16 @@ $user = $mysql->user->one(); // first record
 $user = $mysql->user->where(...)->one();
 ```
 
+### Write
+
+Coming soon
+
+### Custom SQL query
+
+```php
+$users = $mysql->raw('select * from `user`');
+```
+
 ## Mapper
 
 ```php
