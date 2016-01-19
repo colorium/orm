@@ -80,8 +80,12 @@ class Builder implements Source\Builder
             $defaults = $reflector->getDefaultProperties();
             foreach ($defaults as $property => $default) {
                 $annotations = Annotation::ofProperty($this->class, $property);
+                $type = !empty($annotations['var']) ? $annotations['var'] : 'string';
+                if(isset($this->types[$type])) {
+                    $type = $this->types[$type];
+                }
                 $specs[$property] = [
-                    'type' => !empty($annotations['var']) ? $annotations['var'] : 'string',
+                    'type' => $type,
                     'nullable' => $default !== null,
                     'default' => $default,
                     'primary' => isset($annotations['id']) ?: ($property === 'id')
@@ -104,7 +108,7 @@ class Builder implements Source\Builder
         }
 
         $sql = $this->compiler->createTable($this->entity, $specs);
-        return $this->pdo->query($sql);
+        return $this->pdo->query($sql)->execute();
     }
 
 
@@ -116,7 +120,7 @@ class Builder implements Source\Builder
     public function wipe()
     {
         $sql = $this->compiler->dropTable($this->entity);
-        return $this->pdo->query($sql);
+        return $this->pdo->query($sql)->execute();
     }
 
 
@@ -128,7 +132,7 @@ class Builder implements Source\Builder
     public function clear()
     {
         $sql = $this->compiler->truncateTable($this->entity);
-        return $this->pdo->query($sql);
+        return $this->pdo->query($sql)->execute();
     }
 
 }

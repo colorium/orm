@@ -182,9 +182,13 @@ class Query implements Source\Query
         if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($values)) {
             return $this->pdo->lastInsertId();
         }
+
         // error
         $error = $this->pdo->errorInfo();
-        throw new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
+        if(!$error[1]) {
+            $error = $statement->errorInfo();
+        }
+        throw new \PDOException('[' . $error[0] . '] ' . ucfirst($error[2]), (int)$error[0]);
     }
 
 

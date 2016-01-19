@@ -19,7 +19,7 @@ trait Model
      */
     public function add()
     {
-        $id = Hub::add(get_called_class(), $this);
+        $id = Hub::add(static::entity(), $this);
         if($id) {
             $this->id = $id;
             return $id;
@@ -41,7 +41,7 @@ trait Model
         }
 
         $where = ['id' => $this->id];
-        return Hub::edit(get_called_class(), $this, $where);
+        return Hub::edit(static::entity(), $this, $where);
     }
 
 
@@ -68,7 +68,7 @@ trait Model
         }
 
         $where['id'] = $this->id;
-        return Hub::drop(get_called_class(), $where);
+        return Hub::drop(static::entity(), $where);
     }
 
 
@@ -81,7 +81,7 @@ trait Model
      */
     public static function fetch(array $where = [], array $sort = [])
     {
-        return Hub::fetch(get_called_class(), $where, $sort);
+        return Hub::fetch(static::entity(), $where, $sort);
     }
 
 
@@ -93,7 +93,7 @@ trait Model
      */
     public static function one(array $where = [])
     {
-        return Hub::one(get_called_class(), $where);
+        return Hub::one(static::entity(), $where);
     }
 
 
@@ -104,7 +104,7 @@ trait Model
      */
     public static function query()
     {
-        return Hub::query(get_called_class());
+        return Hub::query(static::entity());
     }
 
 
@@ -115,7 +115,24 @@ trait Model
      */
     public static function builder()
     {
-        return Hub::builder(get_called_class());
+        return Hub::builder(static::entity());
+    }
+
+
+    /**
+     * Get self entity name
+     *
+     * @return string
+     */
+    public static function entity()
+    {
+        static $entity;
+        if(!$entity) {
+            $class = (new \ReflectionClass(static::class))->getShortName();
+            $entity = strtolower($class);
+        }
+
+        return $entity;
     }
 
 }

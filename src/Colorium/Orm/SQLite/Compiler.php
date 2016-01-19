@@ -35,7 +35,7 @@ class Compiler extends Mapper\Compiler
         }
 
         $sql = trim($sql, ',') . "\n" . ');';
-        return [$sql, []];
+        return $sql;
     }
 
 
