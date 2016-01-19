@@ -2,30 +2,32 @@
 
 namespace Colorium\Orm;
 
-class MySQL extends Mapper\Native
+class MySQL extends Mapper
 {
 
     /**
      * MySQL driver constructor
      *
-     * @param string $dbname
      * @param array $settings
+     * @param array $classmap
      */
-    public function __construct($dbname, array $settings = [])
+    public function __construct($settings, array $classmap = [])
     {
-        // default settings
-        $settings += [
-            'host'      => 'localhost',
-            'username'  => 'root',
-            'password'  => null,
-            'prefix'    => null
-        ];
+        // localhost
+        if(!is_array($settings)) {
+            $settings = [
+                'host'      => 'localhost',
+                'username'  => 'root',
+                'password'  => '',
+                'dbname'    => $settings,
+            ];
+        }
 
         // create pdo instance
-        $connector = 'mysql:host=' . $settings['host'] . ';dbname=' . $dbname;
+        $connector = 'mysql:host=' . $settings['host'] . ';dbname=' . $settings['dbname'];
         $pdo = new \PDO($connector, $settings['username'], $settings['password']);
 
-        parent::__construct($pdo);
+        parent::__construct($pdo, $classmap);
     }
 
 }

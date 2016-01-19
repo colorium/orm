@@ -1,6 +1,6 @@
 <?php
 
-namespace Colorium\Orm\Mapper\Native;
+namespace Colorium\Orm\Mapper;
 
 class Compiler
 {

@@ -19,8 +19,13 @@ trait Model
      */
     public function add()
     {
-        $values = get_object_vars($this);
-        return Mapper::add(get_called_class(), $values);
+        $id = Hub::add(get_called_class(), $this);
+        if($id) {
+            $this->id = $id;
+            return $id;
+        }
+
+        return false;
     }
 
 
@@ -36,8 +41,7 @@ trait Model
         }
 
         $where = ['id' => $this->id];
-        $values = get_object_vars($this);
-        return Mapper::edit(get_called_class(), $values, $where);
+        return Hub::edit(get_called_class(), $this, $where);
     }
 
 
@@ -64,7 +68,7 @@ trait Model
         }
 
         $where['id'] = $this->id;
-        return Mapper::drop(get_called_class(), $where);
+        return Hub::drop(get_called_class(), $where);
     }
 
 
@@ -77,7 +81,7 @@ trait Model
      */
     public static function fetch(array $where = [], array $sort = [])
     {
-        return Mapper::fetch(get_called_class(), $where, $sort);
+        return Hub::fetch(get_called_class(), $where, $sort);
     }
 
 
@@ -89,29 +93,29 @@ trait Model
      */
     public static function one(array $where = [])
     {
-        return Mapper::one(get_called_class(), $where);
+        return Hub::one(get_called_class(), $where);
     }
 
 
     /**
      * Generate query
      *
-     * @return Mapper\Source\Query
+     * @return Mapper\Query
      */
     public static function query()
     {
-        return Mapper::query(get_called_class());
+        return Hub::query(get_called_class());
     }
 
 
     /**
      * Generate builder
      *
-     * @return Mapper\Source\Builder
+     * @return Mapper\Builder
      */
     public static function builder()
     {
-        return Mapper::builder(get_called_class());
+        return Hub::builder(get_called_class());
     }
 
 }

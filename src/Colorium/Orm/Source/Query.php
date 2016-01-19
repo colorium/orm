@@ -1,6 +1,6 @@
 <?php
 
-namespace Colorium\Orm\Mapper\Source;
+namespace Colorium\Orm\Source;
 
 interface Query
 {
@@ -12,7 +12,7 @@ interface Query
      * @param mixed $value
      * @return $this
      */
-    public function where($expression, $value);
+    public function where($expression, $value = null);
 
     /**
      * Sort by field
@@ -51,18 +51,18 @@ interface Query
     /**
      * Add record (INSERT)
      *
-     * @param array $values
+     * @param mixed $values
      * @return int
      */
-    public function add(array $values);
+    public function add($values);
 
     /**
      * Edit record (UPDATE)
      *
-     * @param array $values
+     * @param mixed $values
      * @return int
      */
-    public function edit(array $values);
+    public function edit($values);
 
     /**
      * Erase record (DROP)

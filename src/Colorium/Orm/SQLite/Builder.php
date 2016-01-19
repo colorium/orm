@@ -2,9 +2,9 @@
 
 namespace Colorium\Orm\SQLite;
 
-use Colorium\Orm\Mapper\Native;
+use Colorium\Orm\Mapper;
 
-class Builder extends Native\Builder
+class Builder extends Mapper\Builder
 {
 
     /**

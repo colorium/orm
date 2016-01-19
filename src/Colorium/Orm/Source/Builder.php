@@ -1,12 +1,12 @@
 <?php
 
-namespace Colorium\Orm\Mapper\Source;
+namespace Colorium\Orm\Source;
 
 interface Builder
 {
 
     /**
-     * Check if entoty exists in source
+     * Check if entity exists
      *
      * @return bool
      */

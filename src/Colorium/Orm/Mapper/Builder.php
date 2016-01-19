@@ -1,15 +1,15 @@
 <?php
 
-namespace Colorium\Orm\Mapper\Native;
+namespace Colorium\Orm\Mapper;
 
-use Colorium\Orm\Mapper\Source;
+use Colorium\Orm\Source;
 use Colorium\Runtime\Annotation;
 
 class Builder implements Source\Builder
 {
 
     /** @var string */
-    protected $name;
+    protected $entity;
 
     /** @var string */
     protected $class;
@@ -35,13 +35,13 @@ class Builder implements Source\Builder
     /**
      * Query constructor
      *
-     * @param string $name
+     * @param string $entity
      * @param \PDO $pdo
      * @param string $class
      */
-    public function __construct($name, \PDO $pdo, $class = null)
+    public function __construct($entity, \PDO $pdo, $class = null)
     {
-        $this->name = $name;
+        $this->entity = $entity;
         $this->pdo = $pdo;
         $this->class = $class;
         $this->compiler = new Compiler;
@@ -56,7 +56,7 @@ class Builder implements Source\Builder
     public function exists()
     {
         try {
-            $sql = $this->compiler->tableExists($this->name);
+            $sql = $this->compiler->tableExists($this->entity);
             $this->pdo->query($sql);
         } catch(\PDOException $e) {
             return false;
@@ -103,7 +103,7 @@ class Builder implements Source\Builder
             }
         }
 
-        $sql = $this->compiler->createTable($this->name, $specs);
+        $sql = $this->compiler->createTable($this->entity, $specs);
         return $this->pdo->query($sql);
     }
 
@@ -115,7 +115,7 @@ class Builder implements Source\Builder
      */
     public function wipe()
     {
-        $sql = $this->compiler->dropTable($this->name);
+        $sql = $this->compiler->dropTable($this->entity);
         return $this->pdo->query($sql);
     }
 
@@ -127,7 +127,7 @@ class Builder implements Source\Builder
      */
     public function clear()
     {
-        $sql = $this->compiler->truncateTable($this->name);
+        $sql = $this->compiler->truncateTable($this->entity);
         return $this->pdo->query($sql);
     }
 

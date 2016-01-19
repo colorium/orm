@@ -2,197 +2,107 @@
 
 namespace Colorium\Orm;
 
-abstract class Mapper
+class Mapper implements Source
 {
 
-    /** @var Mapper\Source */
-    protected static $source;
+    /** @var \PDO */
+    protected $pdo;
+
+    /** @var array */
+    protected $classmap = [];
 
 
     /**
-     * Source accessor
+     * Native PDO driver constructor
      *
-     * @param Mapper\Source $source
-     * @return Mapper\Source
+     * @param \PDO $pdo
+     * @param array $classmap
      */
-    public static function source(Mapper\Source $source = null)
+    public function __construct(\PDO $pdo, array $classmap = [])
     {
-        if($source) {
-            static::$source = $source;
-        }
-        elseif(!isset(static::$source)) {
-            throw new \LogicException('No source instance stored');
-        }
-
-        return static::$source;
-    }
-
-
-    /**
-     * MySQL source
-     *
-     * @param string $dbname
-     * @param array $settings
-     * @return MySQL
-     */
-    public static function MySQL($dbname, array $settings = [])
-    {
-        $mysql = new MySQL($dbname, $settings);
-        return static::source($mysql);
-    }
-
-
-    /**
-     * SQLite source
-     *
-     * @param string $filename
-     * @return MySQL
-     */
-    public static function SQLite($filename)
-    {
-        $sqlite = new SQLite($filename);
-        return static::source($sqlite);
+        $this->pdo = $pdo;
+        $this->classmap = $classmap;
     }
 
 
     /**
      * Generate query
      *
-     * @param string $name
-     * @return Mapper\Source\Query
+     * @param string $entity
+     * @return Mapper\Query
      */
-    public static function query($name)
+    public function query($entity)
     {
-        return static::source()->query($name);
+        $class = $this->classOf($entity);
+        return new Mapper\Query($entity, $this->pdo, $class);
     }
 
 
     /**
      * Generate builder
      *
-     * @param string $name
-     * @return Mapper\Source\Builder
+     * @param string $entity
+     * @return Mapper\Builder
      */
-    public static function builder($name)
+    public function builder($entity)
     {
-        return static::source()->builder($name);
+        $class = $this->classOf($entity);
+        return new Mapper\Builder($entity, $this->pdo, $class);
     }
 
 
     /**
      * Alias of query(name)
      *
-     * @param string $name
-     * @param array $args
-     * @return Mapper\Source\Query
+     * @param $entity
+     * @return Mapper\Query
      */
-    public static function __callStatic($name, array $args)
+    public function __get($entity)
     {
-        return static::query($name);
+        return $this->query($entity);
     }
 
 
     /**
      * Execute raw query
      *
-     * @param string $query
+     * @param string $sql
      * @param array $params
      * @param string $class
      * @return mixed
      */
-    public static function raw($query, array $params = [], $class = null)
+    public function raw($sql, array $params = [], $class = null)
     {
-        return static::source()->raw($query, $params, $class);
+        // prepare statement & execute
+        if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($params)) {
+
+            // collection
+            if($statement->columnCount() > 0) {
+                return $class
+                    ? $statement->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $class)
+                    : $statement->fetchAll(\PDO::FETCH_OBJ);
+            }
+
+            // action
+            return $statement->rowCount();
+        }
+
+        // error
+        $error = $this->pdo->errorInfo();
+        throw new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
     }
 
 
     /**
-     * Fetch many result
-     *
-     * @param string $name
-     * @param array $where
-     * @param array $sort
-     * @return object[]
+     * Get class related to entity
+     * @param string $entity
+     * @return string
      */
-    public static function fetch($name, array $where = [], array $sort = [])
+    protected function classOf($entity)
     {
-        $query = static::query($name);
-        foreach($where as $expression => $value) {
-            $query->where($expression, $value);
-        }
-        foreach($sort as $field => $direction) {
-            $query->sort($field, $direction);
-        }
-
-        return $query->fetch();
-    }
-
-
-    /**
-     * Fetch one result
-     *
-     * @param string $name
-     * @param array $where
-     * @return object
-     */
-    public static function one($name, array $where = [])
-    {
-        $query = static::query($name);
-        foreach($where as $expression => $value) {
-            $query->where($expression, $value);
-        }
-
-        return $query->one();
-    }
-
-
-    /**
-     * Add record
-     *
-     * @param string $name
-     * @param array $values
-     * @return int
-     */
-    public static function add($name, array $values)
-    {
-        return static::query($name)->add($values);
-    }
-
-
-    /**
-     * Edit record
-     *
-     * @param string $name
-     * @param array $values
-     * @param array $where
-     * @return int
-     */
-    public static function edit($name, array $values, array $where = [])
-    {
-        $query = static::query($name);
-        foreach($where as $expression => $value) {
-            $query->where($expression, $value);
-        }
-
-        return $query->add($values);
-    }
-
-
-    /**
-     * Delete record
-     *
-     * @param string $name
-     * @param array $where
-     * @return int
-     */
-    public static function drop($name, array $where = [])
-    {
-        $query = static::query($name);
-        foreach($where as $expression => $value) {
-            $query->where($expression, $value);
-        }
-
-        return $query->drop();
+        return isset($this->classmap[$entity])
+            ? $this->classmap[$entity]
+            : null;
     }
 
 }
