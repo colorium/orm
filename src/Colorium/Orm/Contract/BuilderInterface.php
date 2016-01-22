@@ -1,8 +1,8 @@
 <?php
 
-namespace Colorium\Orm\Source;
+namespace Colorium\Orm\Contract;
 
-interface Builder
+interface BuilderInterface
 {
 
     /**
@@ -15,10 +15,9 @@ interface Builder
     /**
      * Create entity
      *
-     * @param array $specs
      * @return bool
      */
-    public function create(array $specs = []);
+    public function create();
 
     /**
      * Wipe entity

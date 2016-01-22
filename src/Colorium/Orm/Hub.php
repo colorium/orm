@@ -2,20 +2,24 @@
 
 namespace Colorium\Orm;
 
+use Colorium\Orm\Contract\BuilderInterface;
+use Colorium\Orm\Contract\QueryInterface;
+use Colorium\Orm\Contract\SourceInterface;
+
 abstract class Hub
 {
 
-    /** @var Source */
+    /** @var SourceInterface */
     protected static $source;
 
 
     /**
      * Source accessor
      *
-     * @param Source $source
-     * @return Source
+     * @param SourceInterface $source
+     * @return SourceInterface
      */
-    public static function source(Source $source = null)
+    public static function source(SourceInterface $source = null)
     {
         if($source) {
             static::$source = $source;
@@ -60,7 +64,7 @@ abstract class Hub
      * Generate query
      *
      * @param string $entity
-     * @return Mapper\Query
+     * @return QueryInterface
      */
     public static function query($entity)
     {
@@ -72,7 +76,7 @@ abstract class Hub
      * Generate builder
      *
      * @param string $entity
-     * @return Mapper\Builder
+     * @return BuilderInterface
      */
     public static function builder($entity)
     {
@@ -85,7 +89,7 @@ abstract class Hub
      *
      * @param string $entity
      * @param array $args
-     * @return Mapper\Query
+     * @return QueryInterface
      */
     public static function __callStatic($entity, array $args)
     {
@@ -113,7 +117,7 @@ abstract class Hub
      * @param string $entity
      * @param array $where
      * @param array $sort
-     * @return object[]
+     * @return \object[]
      */
     public static function fetch($entity, array $where = [], array $sort = [])
     {

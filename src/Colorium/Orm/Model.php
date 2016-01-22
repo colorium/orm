@@ -2,6 +2,9 @@
 
 namespace Colorium\Orm;
 
+use Colorium\Orm\Contract\BuilderInterface;
+use Colorium\Orm\Contract\QueryInterface;
+
 trait Model
 {
 
@@ -19,7 +22,7 @@ trait Model
      */
     public function add()
     {
-        $id = Hub::add(static::entity(), $this);
+        $id = Hub::add(static::class, $this);
         if($id) {
             $this->id = $id;
             return $id;
@@ -41,7 +44,7 @@ trait Model
         }
 
         $where = ['id' => $this->id];
-        return Hub::edit(static::entity(), $this, $where);
+        return Hub::edit(static::class, $this, $where);
     }
 
 
@@ -68,7 +71,7 @@ trait Model
         }
 
         $where['id'] = $this->id;
-        return Hub::drop(static::entity(), $where);
+        return Hub::drop(static::class, $where);
     }
 
 
@@ -81,7 +84,7 @@ trait Model
      */
     public static function fetch(array $where = [], array $sort = [])
     {
-        return Hub::fetch(static::entity(), $where, $sort);
+        return Hub::fetch(static::class, $where, $sort);
     }
 
 
@@ -93,46 +96,29 @@ trait Model
      */
     public static function one(array $where = [])
     {
-        return Hub::one(static::entity(), $where);
+        return Hub::one(static::class, $where);
     }
 
 
     /**
      * Generate query
      *
-     * @return Mapper\Query
+     * @return QueryInterface
      */
     public static function query()
     {
-        return Hub::query(static::entity());
+        return Hub::query(static::class);
     }
 
 
     /**
      * Generate builder
      *
-     * @return Mapper\Builder
+     * @return BuilderInterface
      */
     public static function builder()
     {
-        return Hub::builder(static::entity());
-    }
-
-
-    /**
-     * Get self entity name
-     *
-     * @return string
-     */
-    public static function entity()
-    {
-        static $entity;
-        if(!$entity) {
-            $class = (new \ReflectionClass(static::class))->getShortName();
-            $entity = strtolower($class);
-        }
-
-        return $entity;
+        return Hub::builder(static::class);
     }
 
 }

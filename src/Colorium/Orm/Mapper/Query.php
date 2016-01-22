@@ -2,49 +2,47 @@
 
 namespace Colorium\Orm\Mapper;
 
-use Colorium\Orm\Source;
+use Colorium\Orm\Contract\QueryInterface;
+use Colorium\Orm\SQL;
 
-class Query implements Source\Query
+class Query implements QueryInterface
 {
 
-    /** @var string */
+    /** @var Entity */
     protected $entity;
-
-    /** @var string */
-    protected $class;
 
     /** @var \PDO */
     protected $pdo;
-
-    /** @var Compiler */
-    protected $compiler;
 
     /** @var array */
     protected $where = [];
 
     /** @var array */
-    protected $operators = ['>', '>=', '<', '<=', '=', 'is', 'not', 'in', 'exists'];
+    protected $simpleOperators = ['=', '>', '>=', '<', '<=', '<>', 'like', 'not like'];
+
+    /** @var array */
+    protected $complexOperators = ['in', 'not in'];
+
+    /** @var array */
+    protected $tupleOperators = ['between', 'not between'];
 
     /** @var array */
     protected $sort = [];
 
     /** @var string */
-    protected $limit;
+    protected $limit = [];
 
 
     /**
      * Query constructor
      *
-     * @param string $entity
+     * @param Entity $entity
      * @param \PDO $pdo
-     * @param string $class
      */
-    public function __construct($entity, \PDO $pdo, $class = null)
+    public function __construct(Entity $entity, \PDO $pdo)
     {
         $this->entity = $entity;
         $this->pdo = $pdo;
-        $this->class = $class;
-        $this->compiler = new Compiler;
     }
 
 
@@ -57,33 +55,62 @@ class Query implements Source\Query
      */
     public function where($expression, $value = null)
     {
-        if(is_int($expression)) {
+        // shortcut : id
+        if(is_int($expression) and !$value) {
             $expression = ['id' => $expression];
         }
+        // force array
         elseif(!is_array($expression)) {
             $expression = [$expression => $value];
         }
 
+        // parse each expression
         foreach($expression as $condition => $input) {
 
-            // parse last
-            $split = explode(' ', $condition);
-            $last = end($split);
-
-            // case 1 : missing '= ?'
-            if(preg_match('/^[a-zA-Z_0-9]+$/', $condition)) {
-                $condition .= ' = ?';
+            // parse condition
+            if(!preg_match('/^(?P<field>[a-zA-Z_0-9]+)( (?P<operator>.+))?$ /', $condition, $extract)) {
+                throw new \PDOException('Invalid expression "' . $condition . '"');
             }
 
-            // case 2 : missing '?'
-            elseif(in_array($last, $this->operators)) {
+            // clean condition
+            $field = trim($extract['field']);
+            $operator = strtolower(trim($extract['operator'], ' ?'));
+
+            // implicit '=' or 'in'
+            if(!$operator) {
+                $operator = is_array($input)
+                    ? reset($this->complexOperators)
+                    : reset($this->simpleOperators);
+            }
+
+            // simple operators
+            if(in_array($operator, $this->simpleOperators)) {
                 if(is_array($input)) {
-                    $placeholders = array_fill(0, count($input), '?');
-                    $condition .= ' (' . implode(', ', $placeholders) . ')';
+                    throw new \PDOException('Operator "' . $operator . '" needs only one input value, in "' . $condition . '"');
                 }
-                else {
-                    $condition .= ' ?';
+
+                $condition = '`' . $field . '` ' . $operator . ' ?';
+            }
+            // complex operators
+            elseif(in_array($operator, $this->complexOperators)) {
+                if(!is_array($input) or empty($input)) {
+                    throw new \PDOException('Operator "' . $operator . '" needs multiple input values, in "' . $condition . '"');
                 }
+
+                $placeholders = array_fill(0, count($input), '?');
+                $condition = '`' . $field . '` ' . $operator . ' (' . implode(', ', $placeholders) . ')';
+            }
+            // tuple operators
+            elseif(in_array($operator, $this->tupleOperators)) {
+                if(!is_array($input) or count($input) != 2) {
+                    throw new \PDOException('Operator "' . $operator . '" needs exactly two input value, in "' . $condition . '"');
+                }
+
+                $condition = '`' . $field . '` ' . $operator . ' ? and ?';
+            }
+            // unknown operator
+            else {
+                throw new \PDOException('Invalid operator in "' . $condition . '"');
             }
 
             $this->where[$condition] = $input;
@@ -111,16 +138,12 @@ class Query implements Source\Query
      * Limit results
      *
      * @param int $i
-     * @param int $step
+     * @param int $offset
      * @return $this
      */
-    public function limit($i, $step = 0)
+    public function limit($i, $offset = 0)
     {
-        $this->limit = $i;
-        if($step) {
-            $this->limit .= ', ' . $step;
-        }
-
+        $this->limit = [$offset, $i];
         return $this;
     }
 
@@ -133,18 +156,20 @@ class Query implements Source\Query
      */
     public function fetch(...$fields)
     {
-        $fields = $fields ?: ['*'];
-        list($sql, $values) = $this->compiler->select($this->entity, $fields, $this->where, $this->sort, $this->limit);
+        if(!$fields) {
+            $fields = array_keys($this->entity->fields) ?: ['*'];
+        }
+
+        list($sql, $values) = SQL::select($this->entity->name, $fields, $this->where, $this->sort, $this->limit);
 
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($values)) {
-            return $this->class
-                ? $statement->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $this->class)
+        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
+            return $this->entity->class
+                ? $statement->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $this->entity->class)
                 : $statement->fetchAll(\PDO::FETCH_OBJ);
         }
-        // error
-        $error = $this->pdo->errorInfo();
-        throw new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
+
+        throw $this->error($statement);
     }
 
 
@@ -156,8 +181,15 @@ class Query implements Source\Query
      */
     public function one(...$fields)
     {
-        $items = $this->limit(1)->fetch(...$fields);
-        return current($items);
+        if($this->limit) {
+            $this->limit[1] = 1; // keep offset
+        }
+        else {
+            $this->limit(1);
+        }
+
+        $items = $this->fetch(...$fields);
+        return reset($items);
     }
 
 
@@ -176,19 +208,14 @@ class Query implements Source\Query
             $values = (array)$values;
         }
 
-        list($sql, $values) = $this->compiler->insert($this->entity, $values);
+        list($sql, $values) = SQL::insert($this->entity->name, $values);
 
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($values)) {
+        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
             return $this->pdo->lastInsertId();
         }
 
-        // error
-        $error = $this->pdo->errorInfo();
-        if(!$error[1]) {
-            $error = $statement->errorInfo();
-        }
-        throw new \PDOException('[' . $error[0] . '] ' . ucfirst($error[2]), (int)$error[0]);
+        throw $this->error($statement);
     }
 
 
@@ -207,15 +234,14 @@ class Query implements Source\Query
             $values = (array)$values;
         }
 
-        list($sql, $values) = $this->compiler->update($this->entity, $values, $this->where);
+        list($sql, $values) = SQL::update($this->entity->name, $values, $this->where);
 
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($values)) {
+        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
             return $statement->rowCount();
         }
-        // error
-        $error = $this->pdo->errorInfo();
-        throw new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
+
+        throw $this->error($statement);
     }
 
 
@@ -226,15 +252,31 @@ class Query implements Source\Query
      */
     public function drop()
     {
-        list($sql, $values) = $this->compiler->delete($this->entity, $this->where);
+        list($sql, $values) = SQL::delete($this->entity->name, $this->where);
 
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($values)) {
+        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
             return $statement->rowCount();
         }
-        // error
+
+        throw $this->error($statement);
+    }
+
+
+    /**
+     * Generate PDO error
+     *
+     * @param \PDOStatement $statement
+     * @return \PDOException
+     */
+    protected function error(\PDOStatement $statement)
+    {
         $error = $this->pdo->errorInfo();
-        throw new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
+        if(!$error[1]) {
+            $error = $statement->errorInfo();
+        }
+
+        return new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
     }
 
 }

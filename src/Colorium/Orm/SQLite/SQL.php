@@ -2,9 +2,9 @@
 
 namespace Colorium\Orm\SQLite;
 
-use Colorium\Orm\Mapper;
+use Colorium\Orm;
 
-class Compiler extends Mapper\Compiler
+abstract class SQL extends Orm\SQL
 {
 
 
@@ -15,9 +15,9 @@ class Compiler extends Mapper\Compiler
      * @param array $specs
      * @return bool
      */
-    public function createTable($table, array $specs)
+    public static function createTable($table, array $specs)
     {
-        $sql = 'CREATE TABLE IF NOT EXISTS `' . $table . '` (';
+        $sql = 'CREATE TABLE IF NOT EXISTS ' . static::e($table) . ' (';
         foreach($specs as $field => $opts) {
             $sql .= "\n" .  '`' . $field . '` ' . $opts['type'];
             if($opts['primary'] == true) {
@@ -45,9 +45,9 @@ class Compiler extends Mapper\Compiler
      * @param string $table
      * @return bool
      */
-    public function truncateTable($table)
+    public static function truncateTable($table)
     {
-        return 'DELETE FROM `' . $table . '`';
+        return 'DELETE FROM ' . static::e($table);
     }
 
 }

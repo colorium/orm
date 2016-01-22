@@ -1,15 +1,15 @@
 <?php
 
-namespace Colorium\Orm;
+namespace Colorium\Orm\Contract;
 
-interface Source
+interface SourceInterface
 {
 
     /**
      * Generate entity query
      *
      * @param string $entity
-     * @return Source\Query
+     * @return QueryInterface
      */
     public function query($entity);
 
@@ -17,7 +17,7 @@ interface Source
      * Generate entity query
      *
      * @param string $entity
-     * @return Source\Builder
+     * @return BuilderInterface
      */
     public function builder($entity);
 

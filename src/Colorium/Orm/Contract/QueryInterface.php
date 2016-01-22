@@ -1,8 +1,8 @@
 <?php
 
-namespace Colorium\Orm\Source;
+namespace Colorium\Orm\Contract;
 
-interface Query
+interface QueryInterface
 {
 
     /**

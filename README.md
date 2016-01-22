@@ -17,16 +17,15 @@ $mysql = new MySQL('dbname', [
 ]);
 ```
 
-
 ### Read
 
-Read may, return a set of `\stdClass` (or specified class if mapped)
+Read many, return a set of `\stdClass` (or specified class if previously mapped)
 ```php
 $users = $mysql->user->fetch();
 $users = $mysql->user->where(...)->sort(...)->limit(...)->fetch();
 ```
 
-Where clause (working operators: `=`, `>`, `>=`, `<`, `<=`, `like`, `in` with array as parameter)
+Where clause (working operators: `>`, `>=`, `<`, `<=`, `is`, `not`, `exists`, `in` with array as parameter, `=` as default)
 ```php
 $users = $mysql->user->where('age', 27)->fetch();
 $users = $mysql->user->where('age >', 27)->fetch();
@@ -47,7 +46,7 @@ $users = $mysql->user->limit(5)->fetch(); // 5 records from start
 $users = $mysql->user->limit(5, 10)->fetch(); // 10 records from the 5th
 ```
 
-Read one, return a `\stdClass` (or specified class if mapped)
+Read one, return a `\stdClass` (or specified class if previously mapped)
 ```php
 $user = $mysql->user->one(); // first record
 $user = $mysql->user->where(...)->one();

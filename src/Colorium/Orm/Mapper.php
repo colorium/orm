@@ -2,11 +2,14 @@
 
 namespace Colorium\Orm;
 
-class Mapper implements Source
+class Mapper implements Contract\SourceInterface
 {
 
     /** @var \PDO */
     protected $pdo;
+
+    /** @var Mapper\Entity[] */
+    protected $entities = [];
 
     /** @var array */
     protected $classmap = [];
@@ -21,7 +24,29 @@ class Mapper implements Source
     public function __construct(\PDO $pdo, array $classmap = [])
     {
         $this->pdo = $pdo;
-        $this->classmap = $classmap;
+        foreach($classmap as $entity => $class) {
+            $this->entities[$entity] = Mapper\Entity::of($class);
+            $this->classmap[$class] = $entity;
+        }
+    }
+
+
+    /**
+     * Get entity definition (from name of class)
+     *
+     * @param string $entity
+     * @return Mapper\Entity
+     */
+    public function entity($entity)
+    {
+        if(isset($this->classmap[$entity])) {
+            $entity = $this->classmap[$entity];
+        }
+        elseif(!isset($this->entities[$entity])) {
+            $this->entities[$entity] = new Mapper\Entity($entity);
+        }
+
+        return $this->entities[$entity];
     }
 
 
@@ -33,8 +58,8 @@ class Mapper implements Source
      */
     public function query($entity)
     {
-        $class = $this->classOf($entity);
-        return new Mapper\Query($entity, $this->pdo, $class);
+        $entity = $this->entity($entity);
+        return new Mapper\Query($entity, $this->pdo);
     }
 
 
@@ -46,8 +71,8 @@ class Mapper implements Source
      */
     public function builder($entity)
     {
-        $class = $this->classOf($entity);
-        return new Mapper\Builder($entity, $this->pdo, $class);
+        $entity = $this->entity($entity);
+        return new Mapper\Builder($entity, $this->pdo);
     }
 
 
@@ -89,20 +114,10 @@ class Mapper implements Source
 
         // error
         $error = $this->pdo->errorInfo();
+        if(!$error[1]){
+            $error = $statement->errorInfo();
+        }
         throw new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
-    }
-
-
-    /**
-     * Get class related to entity
-     * @param string $entity
-     * @return string
-     */
-    protected function classOf($entity)
-    {
-        return isset($this->classmap[$entity])
-            ? $this->classmap[$entity]
-            : null;
     }
 
 }

@@ -2,13 +2,13 @@
 
 namespace Colorium\Orm\Mapper;
 
-use Colorium\Orm\Source;
-use Colorium\Runtime\Annotation;
+use Colorium\Orm\Contract\BuilderInterface;
+use Colorium\Orm\SQL;
 
-class Builder implements Source\Builder
+class Builder implements BuilderInterface
 {
 
-    /** @var string */
+    /** @var Entity */
     protected $entity;
 
     /** @var string */
@@ -17,34 +17,17 @@ class Builder implements Source\Builder
     /** @var \PDO */
     protected $pdo;
 
-    /** @var Compiler */
-    protected $compiler;
-
-    /** @var array */
-    protected $types = [
-        'string'            => 'VARCHAR(255)',
-        'string email'      => 'VARCHAR(255)',
-        'string text'       => 'TEXT',
-        'string date'       => 'DATE',
-        'string datetime'   => 'DATETIME',
-        'int'               => 'INTEGER',
-        'bool'              => 'BOOLEAN',
-    ];
-
 
     /**
      * Query constructor
      *
-     * @param string $entity
+     * @param Entity $entity
      * @param \PDO $pdo
-     * @param string $class
      */
-    public function __construct($entity, \PDO $pdo, $class = null)
+    public function __construct(Entity $entity, \PDO $pdo)
     {
         $this->entity = $entity;
         $this->pdo = $pdo;
-        $this->class = $class;
-        $this->compiler = new Compiler;
     }
 
 
@@ -56,9 +39,10 @@ class Builder implements Source\Builder
     public function exists()
     {
         try {
-            $sql = $this->compiler->tableExists($this->entity);
-            $this->pdo->query($sql);
-        } catch(\PDOException $e) {
+            $sql = SQL::tableExists($this->entity->name);
+            $this->pdo->query($sql)->execute();
+        }
+        catch(\PDOException $e) {
             return false;
         }
 
@@ -69,45 +53,16 @@ class Builder implements Source\Builder
     /**
      * Create entity
      *
-     * @param array $specs
      * @return bool
      */
-    public function create(array $specs = [])
+    public function create()
     {
-        // read class specs
-        if(!$specs and $this->class) {
-            $reflector = new \ReflectionClass($this->class);
-            $defaults = $reflector->getDefaultProperties();
-            foreach ($defaults as $property => $default) {
-                $annotations = Annotation::ofProperty($this->class, $property);
-                $type = !empty($annotations['var']) ? $annotations['var'] : 'string';
-                if(isset($this->types[$type])) {
-                    $type = $this->types[$type];
-                }
-                $specs[$property] = [
-                    'type' => $type,
-                    'nullable' => $default !== null,
-                    'default' => $default,
-                    'primary' => isset($annotations['id']) ?: ($property === 'id')
-                ];
-            }
-        }
-        // parse custom specs
-        else {
-            foreach($specs as $field => &$opts) {
-                $opts += [
-                    'type' => 'string',
-                    'nullable' => true,
-                    'default' => null,
-                    'primary' => ($field === 'i')
-                ];
-                if(isset($this->types[$opts['type']])) {
-                    $opts['type'] = $this->types[$opts['type']];
-                }
-            }
+        $opts = [];
+        foreach($this->entity->fields as $field) {
+            $opts[$field->name] = get_object_vars($field);
         }
 
-        $sql = $this->compiler->createTable($this->entity, $specs);
+        $sql = SQL::createTable($this->entity->name, $opts);
         return $this->pdo->query($sql)->execute();
     }
 
@@ -119,7 +74,7 @@ class Builder implements Source\Builder
      */
     public function wipe()
     {
-        $sql = $this->compiler->dropTable($this->entity);
+        $sql = SQL::dropTable($this->entity->name);
         return $this->pdo->query($sql)->execute();
     }
 
@@ -131,7 +86,7 @@ class Builder implements Source\Builder
      */
     public function clear()
     {
-        $sql = $this->compiler->truncateTable($this->entity);
+        $sql = SQL::truncateTable($this->entity->name);
         return $this->pdo->query($sql)->execute();
     }
 

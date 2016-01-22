@@ -26,8 +26,8 @@ class SQLite extends Mapper
      */
     public function builder($entity)
     {
-        $class = $this->classOf($entity);
-        return new SQLite\Builder($entity, $this->pdo, $class);
+        $entity = $this->entity($entity);
+        return new SQLite\Builder($entity, $this->pdo);
     }
 
 }

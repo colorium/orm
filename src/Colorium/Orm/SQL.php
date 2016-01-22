@@ -1,8 +1,8 @@
 <?php
 
-namespace Colorium\Orm\Mapper;
+namespace Colorium\Orm;
 
-class Compiler
+abstract class SQL
 {
 
     /**
@@ -12,14 +12,14 @@ class Compiler
      * @param array $fields
      * @param array $where
      * @param array $sort
-     * @param string $limit
+     * @param array $limit
      * @return array
      */
-    public function select($table, array $fields, array $where = [], array $sort = [], $limit = null)
+    public static function select($table, array $fields, array $where = [], array $sort = [], array $limit = [])
     {
         $sql = $values = [];
         $sql[] = 'SELECT ' . implode(', ', $fields);
-        $sql[] = 'FROM `' . $table . '`';
+        $sql[] = 'FROM ' . static::e($table);
 
         if($where) {
             $items = [];
@@ -37,13 +37,13 @@ class Compiler
         if($sort) {
             $items = [];
             foreach($sort as $field => $direction) {
-                $items[] = '`' . $field . '` ' . ($direction == SORT_DESC ? 'DESC' : 'ASC');
+                $items[] = static::e($field) . ' ' . ($direction == SORT_DESC ? 'DESC' : 'ASC');
             }
             $sql[] = 'ORDER BY ' .implode(', ', $items);
         }
 
         if($limit) {
-            $sql[] = 'LIMIT ' . $limit;
+            $sql[] = 'LIMIT ' . $limit[0] . ', ' . $limit[1];
         }
 
         $sql = implode("\n", $sql);
@@ -58,13 +58,13 @@ class Compiler
      * @param array $set
      * @return array
      */
-    public function insert($table, array $set)
+    public static function insert($table, array $set)
     {
         $sql = $values = $fields = $holders = [];
-        $sql[] = 'INSERT INTO `' . $table . '`';
+        $sql[] = 'INSERT INTO ' . static::e($table);
 
         foreach($set as $field => $value) {
-            $fields[] = '`' . $field . '`';
+            $fields[] = static::e($field);
             $holders[] = '?';
             $values[] = $value;
         }
@@ -85,13 +85,13 @@ class Compiler
      * @param array $where
      * @return array
      */
-    public function update($table, array $set, array $where = [])
+    public static function update($table, array $set, array $where = [])
     {
         $sql = $values = $fields = [];
-        $sql[] = 'UPDATE `' . $table . '`';
+        $sql[] = 'UPDATE ' . static::e($table);
 
         foreach($set as $field => $value) {
-            $fields[] = '`' . $field . '` = ?';
+            $fields[] = static::e($field) . ' = ?';
             $values[] = $value;
         }
 
@@ -122,10 +122,10 @@ class Compiler
      * @param array $where
      * @return array
      */
-    public function delete($table, array $where = [])
+    public static function delete($table, array $where = [])
     {
         $sql = $values = [];
-        $sql[] = 'DELETE FROM `' . $table . '`';
+        $sql[] = 'DELETE FROM ' . static::e($table);
 
         if($where) {
             $where = [];
@@ -151,9 +151,9 @@ class Compiler
      * @param string $table
      * @return bool
      */
-    public function tableExists($table)
+    public static function tableExists($table)
     {
-        return 'SELECT 1 FROM `' . $table . '`';
+        return 'SELECT 1 FROM ' . static::e($table);
     }
 
 
@@ -164,11 +164,11 @@ class Compiler
      * @param array $specs
      * @return bool
      */
-    public function createTable($table, array $specs)
+    public static function createTable($table, array $specs)
     {
-        $sql = 'CREATE TABLE IF NOT EXISTS `' . $table . '` (';
+        $sql = 'CREATE TABLE IF NOT EXISTS ' . static::e($table) . ' (';
         foreach($specs as $field => $opts) {
-            $sql .= "\n" .  '`' . $field . '` ' . $opts['type'];
+            $sql .= "\n" .  static::e($field) . ' ' . $opts['type'];
             if($opts['primary'] == true) {
                 $opts['nullable'] = false;
                 $opts['default'] = null;
@@ -194,9 +194,9 @@ class Compiler
      * @param string $table
      * @return bool
      */
-    public function dropTable($table)
+    public static function dropTable($table)
     {
-        return 'DROP TABLE IF EXISTS `' . $table . '`';
+        return 'DROP TABLE IF EXISTS ' . static::e($table);
     }
 
 
@@ -206,9 +206,21 @@ class Compiler
      * @param string $table
      * @return bool
      */
-    public function truncateTable($table)
+    public static function truncateTable($table)
     {
-        return 'TRUNCATE TABLE `' . $table . '`';
+        return 'TRUNCATE TABLE ' . static::e($table);
+    }
+
+
+    /**
+     * Protect string
+     *
+     * @param $field
+     * @return string
+     */
+    protected static function e($field)
+    {
+        return '`' . trim($field, '`') . '`';
     }
 
 }
