@@ -68,7 +68,7 @@ class Query implements QueryInterface
         foreach($expression as $condition => $input) {
 
             // parse condition
-            if(!preg_match('/^(?P<field>[a-zA-Z_0-9]+)( (?P<operator>.+))?$ /', $condition, $extract)) {
+            if(!preg_match('/^(?P<field>[a-zA-Z_0-9]+)( (?P<operator>.+))?$/', $condition, $extract)) {
                 throw new \PDOException('Invalid expression "' . $condition . '"');
             }
 
