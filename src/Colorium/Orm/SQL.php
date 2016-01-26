@@ -98,16 +98,16 @@ abstract class SQL
         $sql[] = 'SET ' . implode(', ', $fields);
 
         if($where) {
-            $where = [];
+            $clause = [];
             foreach($where as $exp => $data) {
-                $where[] = $exp;
+                $clause[] = $exp;
                 if(is_array($data)) {
                     $values = array_merge($values, $data);
                     continue;
                 }
                 $values[] = $data;
             }
-            $sql[] = 'WHERE ' . implode(' AND ', $where);
+            $sql[] = 'WHERE ' . implode(' AND ', $clause);
         }
 
         $sql = implode("\n", $sql);

@@ -179,7 +179,7 @@ abstract class Hub
             $query->where($expression, $value);
         }
 
-        return $query->add($values);
+        return $query->edit($values);
     }
 
 

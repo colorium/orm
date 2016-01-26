@@ -211,11 +211,15 @@ class Query implements QueryInterface
         list($sql, $values) = SQL::insert($this->entity->name, $values);
 
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
-            return $this->pdo->lastInsertId();
+        if($statement = $this->pdo->prepare($sql)) {
+            if($statement->execute($values)) {
+                return $this->pdo->lastInsertId();
+            }
+
+            throw $this->error($sql, $statement);
         }
 
-        throw $this->error($statement);
+        throw $this->error($sql);
     }
 
 
@@ -237,11 +241,15 @@ class Query implements QueryInterface
         list($sql, $values) = SQL::update($this->entity->name, $values, $this->where);
 
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
-            return $statement->rowCount();
+        if($statement = $this->pdo->prepare($sql)) {
+            if($statement->execute($values)) {
+                return $statement->rowCount();
+            }
+
+            throw $this->error($sql, $statement);
         }
 
-        throw $this->error($statement);
+        throw $this->error($sql);
     }
 
 
@@ -255,28 +263,34 @@ class Query implements QueryInterface
         list($sql, $values) = SQL::delete($this->entity->name, $this->where);
 
         // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
-            return $statement->rowCount();
+        if($statement = $this->pdo->prepare($sql)) {
+            if($statement->execute($values)) {
+                return $statement->rowCount();
+            }
+
+            throw $this->error($sql, $statement);
         }
 
-        throw $this->error($statement);
+        throw $this->error($sql);
     }
 
 
     /**
      * Generate PDO error
      *
+     * @param string $sql
      * @param \PDOStatement $statement
      * @return \PDOException
      */
-    protected function error(\PDOStatement $statement)
+    protected function error($sql, \PDOStatement $statement = null)
     {
         $error = $this->pdo->errorInfo();
-        if(!$error[1]) {
+        if(!$error[1] and $statement) {
             $error = $statement->errorInfo();
         }
 
-        return new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
+        $code = is_int($error[0]) ? $error[0] : null;
+        return new \PDOException('[' . $error[0] . '] ' . $error[2] . ' in (' . $sql . ')', $code);
     }
 
 }
