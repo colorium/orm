@@ -2,11 +2,8 @@
 
 namespace Colorium\Orm;
 
-class Mapper implements Contract\SourceInterface
+class Mapper extends SafePDO implements Contract\SourceInterface
 {
-
-    /** @var \PDO */
-    protected $pdo;
 
     /** @var Mapper\Entity[] */
     protected $entities = [];
@@ -23,7 +20,7 @@ class Mapper implements Contract\SourceInterface
      */
     public function __construct(\PDO $pdo, array $classmap = [])
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo);
         foreach($classmap as $entity => $class) {
             $this->entities[$entity] = Mapper\Entity::of($class);
             $this->classmap[$class] = $entity;
@@ -92,32 +89,22 @@ class Mapper implements Contract\SourceInterface
      * Execute raw query
      *
      * @param string $sql
-     * @param array $params
+     * @param array $values
      * @param string $class
      * @return mixed
      */
-    public function raw($sql, array $params = [], $class = null)
+    public function raw($sql, array $values = [], $class = null)
     {
-        // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $result = $statement->execute($params)) {
-
-            // collection
+        return $this->execute($sql, $values, function(\PDOStatement $statement) use($class)
+        {
             if($statement->columnCount() > 0) {
                 return $class
                     ? $statement->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $class)
                     : $statement->fetchAll(\PDO::FETCH_OBJ);
             }
 
-            // action
             return $statement->rowCount();
-        }
-
-        // error
-        $error = $this->pdo->errorInfo();
-        if(!$error[1]){
-            $error = $statement->errorInfo();
-        }
-        throw new \PDOException('[' . $error[0] . '] ' . $error[2], $error[0]);
+        });
     }
 
 }

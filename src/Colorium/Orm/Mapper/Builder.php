@@ -3,9 +3,10 @@
 namespace Colorium\Orm\Mapper;
 
 use Colorium\Orm\Contract\BuilderInterface;
+use Colorium\Orm\SafePDO;
 use Colorium\Orm\SQL;
 
-class Builder implements BuilderInterface
+class Builder extends SafePDO implements BuilderInterface
 {
 
     /** @var Entity */
@@ -13,9 +14,6 @@ class Builder implements BuilderInterface
 
     /** @var string */
     protected $class;
-
-    /** @var \PDO */
-    protected $pdo;
 
 
     /**
@@ -26,8 +24,8 @@ class Builder implements BuilderInterface
      */
     public function __construct(Entity $entity, \PDO $pdo)
     {
+        parent::__construct($pdo);
         $this->entity = $entity;
-        $this->pdo = $pdo;
     }
 
 
@@ -40,13 +38,11 @@ class Builder implements BuilderInterface
     {
         try {
             $sql = SQL::tableExists($this->entity->name);
-            $this->pdo->query($sql)->execute();
+            return $this->execute($sql);
         }
         catch(\PDOException $e) {
             return false;
         }
-
-        return true;
     }
 
 
@@ -63,7 +59,7 @@ class Builder implements BuilderInterface
         }
 
         $sql = SQL::createTable($this->entity->name, $opts);
-        return $this->pdo->query($sql)->execute();
+        return $this->execute($sql);
     }
 
 
@@ -75,7 +71,7 @@ class Builder implements BuilderInterface
     public function wipe()
     {
         $sql = SQL::dropTable($this->entity->name);
-        return $this->pdo->query($sql)->execute();
+        return $this->execute($sql);
     }
 
 
@@ -87,7 +83,7 @@ class Builder implements BuilderInterface
     public function clear()
     {
         $sql = SQL::truncateTable($this->entity->name);
-        return $this->pdo->query($sql)->execute();
+        return $this->execute($sql);
     }
 
 }

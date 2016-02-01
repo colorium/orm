@@ -3,16 +3,14 @@
 namespace Colorium\Orm\Mapper;
 
 use Colorium\Orm\Contract\QueryInterface;
+use Colorium\Orm\SafePDO;
 use Colorium\Orm\SQL;
 
-class Query implements QueryInterface
+class Query extends SafePDO implements QueryInterface
 {
 
     /** @var Entity */
     protected $entity;
-
-    /** @var \PDO */
-    protected $pdo;
 
     /** @var array */
     protected $where = [];
@@ -41,8 +39,8 @@ class Query implements QueryInterface
      */
     public function __construct(Entity $entity, \PDO $pdo)
     {
+        parent::__construct($pdo);
         $this->entity = $entity;
-        $this->pdo = $pdo;
     }
 
 
@@ -162,14 +160,11 @@ class Query implements QueryInterface
 
         list($sql, $values) = SQL::select($this->entity->name, $fields, $this->where, $this->sort, $this->limit);
 
-        // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql) and $statement->execute($values)) {
+        return $this->execute($sql, $values, function(\PDOStatement $statement) {
             return $this->entity->class
                 ? $statement->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $this->entity->class)
                 : $statement->fetchAll(\PDO::FETCH_OBJ);
-        }
-
-        throw $this->error($statement);
+        });
     }
 
 
@@ -210,16 +205,9 @@ class Query implements QueryInterface
 
         list($sql, $values) = SQL::insert($this->entity->name, $values);
 
-        // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql)) {
-            if($statement->execute($values)) {
-                return $this->pdo->lastInsertId();
-            }
-
-            throw $this->error($sql, $statement);
-        }
-
-        throw $this->error($sql);
+        return $this->execute($sql, $values, function() {
+            return $this->pdo->lastInsertId();
+        });
     }
 
 
@@ -240,21 +228,14 @@ class Query implements QueryInterface
 
         list($sql, $values) = SQL::update($this->entity->name, $values, $this->where);
 
-        // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql)) {
-            if($statement->execute($values)) {
-                return $statement->rowCount();
-            }
-
-            throw $this->error($sql, $statement);
-        }
-
-        throw $this->error($sql);
+        return $this->execute($sql, $values, function(\PDOStatement $statement) {
+            return $statement->rowCount();
+        });
     }
 
 
     /**
-     * Erase record (DROP)
+     * Erase record
      *
      * @return int
      */
@@ -262,35 +243,8 @@ class Query implements QueryInterface
     {
         list($sql, $values) = SQL::delete($this->entity->name, $this->where);
 
-        // prepare statement & execute
-        if($statement = $this->pdo->prepare($sql)) {
-            if($statement->execute($values)) {
-                return $statement->rowCount();
-            }
-
-            throw $this->error($sql, $statement);
-        }
-
-        throw $this->error($sql);
+        return $this->execute($sql, $values, function(\PDOStatement $statement) {
+            return $statement->rowCount();
+        });
     }
-
-
-    /**
-     * Generate PDO error
-     *
-     * @param string $sql
-     * @param \PDOStatement $statement
-     * @return \PDOException
-     */
-    protected function error($sql, \PDOStatement $statement = null)
-    {
-        $error = $this->pdo->errorInfo();
-        if(!$error[1] and $statement) {
-            $error = $statement->errorInfo();
-        }
-
-        $code = is_int($error[0]) ? $error[0] : null;
-        return new \PDOException('[' . $error[0] . '] ' . $error[2] . ' in (' . $sql . ')', $code);
-    }
-
 }
