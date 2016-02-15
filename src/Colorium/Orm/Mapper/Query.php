@@ -72,7 +72,9 @@ class Query extends SafePDO implements QueryInterface
 
             // clean condition
             $field = trim($extract['field']);
-            $operator = strtolower(trim($extract['operator'], ' ?'));
+            $operator = isset($extract['operator'])
+                ? strtolower(trim($extract['operator'], ' ?'))
+                : null;
 
             // implicit '=' or 'in'
             if(!$operator) {
